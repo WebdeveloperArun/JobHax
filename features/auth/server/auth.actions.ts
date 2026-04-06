@@ -6,7 +6,7 @@ import argon2 from "argon2"
 import { eq, or } from "drizzle-orm";
 
 
-export const registrationAction = async (data: {
+export const registerUserAction = async (data: {
     name: string;
     userName: string;
     email: string;
@@ -36,6 +36,40 @@ export const registrationAction = async (data: {
         return {
             status: "ERROR",
             message: "Something went wrong"
+        }
+    }
+}
+
+
+export const loginUserAction = async (data: {
+    email: string;
+    password: string;
+}) => {
+    try {
+        const { email, password } = data;
+        const [user] = await db.select().from(users).where(eq(users.email, email));
+        if (!user) {
+            return {
+                status: "ERROR",
+                message: "User not found"
+            }
+        }
+        const isPasswordValid = await argon2.verify(user.password, password);
+        if (!isPasswordValid) {
+            return {
+                status: "ERROR",
+                message: "Invalid password"
+            }
+        }
+        return {
+            status: "SUCCESS",
+            message: "User logged in successfully"
+        }
+    } catch (error: any) {
+        console.log(error)
+        return {
+            status: "ERROR",
+            message: error.message
         }
     }
 }

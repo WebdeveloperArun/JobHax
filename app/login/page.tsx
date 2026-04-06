@@ -9,6 +9,8 @@ import { Briefcase, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
+import { loginUserAction } from "@/features/auth/server/auth.actions"
 
 interface LoginFormProps {
   email: string;
@@ -26,8 +28,18 @@ export default function LoginPage() {
     },
   });
 
-  const onSubmit = (data: LoginFormProps) => {
-    console.log(data);
+  const onSubmit = async (data: LoginFormProps) => {
+    const loginData = {
+      email: data.email.toLowerCase().trim(),
+      password: data.password,
+    }
+
+    const result = await loginUserAction(loginData);
+    if (result.status === "SUCCESS") {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
   }
 
   return (

@@ -9,8 +9,8 @@ import { Briefcase, Eye, EyeOff, User, Building2 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { registrationAction } from "./registrationAction.action"
 import { toast } from "sonner"
+import { registerUserAction } from "@/features/auth/server/auth.actions"
 
 interface RegisterFormProps {
   name: string;
@@ -46,7 +46,7 @@ export default function RegisterPage() {
       role: data.role,
     }
 
-    const result = await registrationAction(registrationData);
+    const result = await registerUserAction(registrationData);
     if (result.status === "SUCCESS") {
       toast.success(result.message);
     } else {
