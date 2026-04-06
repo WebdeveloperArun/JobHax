@@ -11,24 +11,19 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { loginUserAction } from "@/features/auth/server/auth.actions"
+import { LoginUserData, loginUserSchema } from "@/features/auth/auth.schema"
+import { zodResolver } from "@hookform/resolvers/zod"
 
-interface LoginFormProps {
-  email: string;
-  password: string;
-  remember?: boolean;
-}
+
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormProps>({
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginUserData>({
+    resolver: zodResolver(loginUserSchema),
   });
 
-  const onSubmit = async (data: LoginFormProps) => {
+  const onSubmit = async (data: LoginUserData) => {
     const loginData = {
       email: data.email.toLowerCase().trim(),
       password: data.password,

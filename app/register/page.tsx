@@ -11,33 +11,23 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { registerUserAction } from "@/features/auth/server/auth.actions"
+import { RegisterUserWithConfirmData, registerUserWithConfirmSchema } from "@/features/auth/auth.schema"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation"
 
-interface RegisterFormProps {
-  name: string;
-  userName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  role: "applicant" | "employer";
-}
+
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [role, setRole] = useState<"applicant" | "employer">("applicant")
+  const router = useRouter();
 
-  const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<RegisterFormProps>({
-    defaultValues: {
-      name: "",
-      userName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      role: role,
-    },
+  const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<RegisterUserWithConfirmData>({
+    resolver: zodResolver(registerUserWithConfirmSchema),
   });
 
-  const onSubmit = async (data: RegisterFormProps) => {
+  const onSubmit = async (data: RegisterUserWithConfirmData) => {
     const registrationData = {
       name: data.name.trim(),
       userName: data.userName.trim(),
@@ -48,7 +38,8 @@ export default function RegisterPage() {
 
     const result = await registerUserAction(registrationData);
     if (result.status === "SUCCESS") {
-      toast.success(result.message);
+      if (data.role === "employer") router.push("/employer/dashboard");
+      else router.push("/candidate/dashboard");
     } else {
       toast.error(result.message);
     }
