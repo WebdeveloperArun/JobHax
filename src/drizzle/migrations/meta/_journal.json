@@ -8,6 +8,20 @@
       "when": 1774527016399,
       "tag": "0000_foamy_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1774931557307,
+      "tag": "0001_tricky_zaran",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1774932802420,
+      "tag": "0002_bouncy_wallflower",
+      "breakpoints": true
     }
   ]
 }

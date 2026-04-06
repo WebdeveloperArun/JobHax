@@ -9,25 +9,27 @@ import { Briefcase, Eye, EyeOff, User, Building2 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { registrationAction } from "./registrationAction.action"
+import { toast } from "sonner"
 
 interface RegisterFormProps {
   name: string;
-  username: string;
+  userName: string;
   email: string;
   password: string;
   confirmPassword: string;
-  role: string;
+  role: "applicant" | "employer";
 }
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [role, setRole] = useState("candidate")
+  const [role, setRole] = useState<"applicant" | "employer">("applicant")
 
   const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<RegisterFormProps>({
     defaultValues: {
       name: "",
-      username: "",
+      userName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -35,8 +37,21 @@ export default function RegisterPage() {
     },
   });
 
-  const onSubmit = (data: RegisterFormProps) => {
-    console.log(data);
+  const onSubmit = async (data: RegisterFormProps) => {
+    const registrationData = {
+      name: data.name.trim(),
+      userName: data.userName.trim(),
+      email: data.email.toLowerCase().trim(),
+      password: data.password,
+      role: data.role,
+    }
+
+    const result = await registrationAction(registrationData);
+    if (result.status === "SUCCESS") {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
   }
 
   return (
@@ -107,7 +122,7 @@ export default function RegisterPage() {
                 <div className="space-y-3">
                   <Label>I am a</Label>
                   <RadioGroup
-                    onValueChange={(value) => {
+                    onValueChange={(value: "applicant" | "employer") => {
                       setRole(value);
                       setValue("role", value);
                     }}
@@ -115,15 +130,15 @@ export default function RegisterPage() {
                     className="grid grid-cols-2 gap-3"
                   >
                     <Label
-                      htmlFor="candidate"
-                      className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4 transition-colors ${role === "candidate"
+                      htmlFor="applicant"
+                      className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4 transition-colors ${role === "applicant"
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-primary/50"
                         }`}
                     >
-                      <RadioGroupItem value="candidate" id="candidate" className="sr-only" />
-                      <User className={`h-6 w-6 mb-2 ${role === "candidate" ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className={`text-sm font-medium ${role === "candidate" ? "text-primary" : "text-foreground"}`}>
+                      <RadioGroupItem value="applicant" id="applicant" className="sr-only" />
+                      <User className={`h-6 w-6 mb-2 ${role === "applicant" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className={`text-sm font-medium ${role === "applicant" ? "text-primary" : "text-foreground"}`}>
                         Candidate
                       </span>
                       <span className="text-xs text-muted-foreground mt-1">
@@ -168,9 +183,9 @@ export default function RegisterPage() {
                     type="text"
                     placeholder="johndoe"
                     className="h-11"
-                    {...register("username", { required: "Username is required" })}
+                    {...register("userName", { required: "Username is required" })}
                   />
-                  {errors.username && <p className="text-red-500">{errors.username.message}</p>}
+                  {errors.userName && <p className="text-red-500">{errors.userName.message}</p>}
                 </div>
 
                 <div className="space-y-2">
