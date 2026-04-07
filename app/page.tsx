@@ -6,8 +6,11 @@ import { HowItWorks } from "@/components/how-it-works"
 import { Stats } from "@/components/stats"
 import { Testimonials } from "@/components/testimonials"
 import { CTASection } from "@/components/cta-section"
+import { getCurrentUser } from "@/features/auth/server/auth.queries"
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getCurrentUser();
+  console.log(user);
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
