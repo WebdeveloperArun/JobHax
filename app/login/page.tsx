@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Briefcase, Eye, EyeOff } from "lucide-react"
+import { Briefcase, Eye, EyeOff, Router } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
@@ -13,11 +13,13 @@ import { toast } from "sonner"
 import { loginUserAction } from "@/features/auth/server/auth.actions"
 import { LoginUserData, loginUserSchema } from "@/features/auth/auth.schema"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
 
 
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const router = useRouter();
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginUserData>({
     resolver: zodResolver(loginUserSchema),
@@ -31,7 +33,7 @@ export default function LoginPage() {
 
     const result = await loginUserAction(loginData);
     if (result.status === "SUCCESS") {
-      toast.success(result.message);
+      router.push("/");
     } else {
       toast.error(result.message);
     }

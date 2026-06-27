@@ -37,7 +37,7 @@ interface DashboardSidebarProps {
 }
 
 const candidateLinks: SidebarLink[] = [
-  { href: "/candidate/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/candidate", label: "Dashboard", icon: LayoutDashboard },
   { href: "/candidate/profile", label: "My Profile", icon: User },
   { href: "/candidate/applications", label: "My Applications", icon: FileText },
   { href: "/candidate/saved-jobs", label: "Saved Jobs", icon: Bookmark },
@@ -46,7 +46,7 @@ const candidateLinks: SidebarLink[] = [
 ]
 
 const employerLinks: SidebarLink[] = [
-  { href: "/employer/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/employer", label: "Dashboard", icon: LayoutDashboard },
   { href: "/employer/company", label: "Company Profile", icon: Building2 },
   { href: "/employer/jobs", label: "Manage Jobs", icon: Briefcase },
   { href: "/employer/post-job", label: "Post New Job", icon: PlusCircle },

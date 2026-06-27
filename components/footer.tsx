@@ -27,7 +27,7 @@ export function Footer() {
               <Link href="/register" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Create Account
               </Link>
-              <Link href="/candidate/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/candidate" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Candidate Dashboard
               </Link>
             </nav>
@@ -36,13 +36,13 @@ export function Footer() {
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-foreground">For Employers</h4>
             <nav className="flex flex-col gap-2">
-              <Link href="/employer/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/employer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Post a Job
               </Link>
               <Link href="/register" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Employer Sign Up
               </Link>
-              <Link href="/employer/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/employer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Employer Dashboard
               </Link>
             </nav>

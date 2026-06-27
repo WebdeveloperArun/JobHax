@@ -38,8 +38,8 @@ export default function RegisterPage() {
 
     const result = await registerUserAction(registrationData);
     if (result.status === "SUCCESS") {
-      if (data.role === "employer") router.push("/employer/dashboard");
-      else router.push("/candidate/dashboard");
+      if (data.role === "employer") router.push("/employer");
+      else router.push("/candidate");
     } else {
       toast.error(result.message);
     }
