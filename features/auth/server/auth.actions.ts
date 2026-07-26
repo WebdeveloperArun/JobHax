@@ -5,7 +5,10 @@ import { users } from "@/src/drizzle/schema";
 import argon2 from "argon2"
 import { eq, or } from "drizzle-orm";
 import { LoginUserData, loginUserSchema, RegisterUserData, registerUserSchema } from "../auth.schema";
-import { createSessionAndSetCookies } from "./use-cases/sessions";
+import { createSessionAndSetCookies, invalidateSession } from "./use-cases/sessions";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { createHash } from "crypto";
 
 
 export const registerUserAction = async (data: RegisterUserData) => {
@@ -75,4 +78,18 @@ export const loginUserAction = async (data: LoginUserData) => {
             message: error.message
         }
     }
+}
+
+export const logoutUserAction = async () => {
+    const cookieStore = await cookies();
+    const session = cookieStore.get("session")?.value;
+        
+    if (!session) return redirect("/login");
+
+    const hashedToken = createHash("sha-256").update(session).digest("hex");
+
+    await invalidateSession(hashedToken);
+    cookieStore.delete("session");
+
+    return redirect("/login")
 }
