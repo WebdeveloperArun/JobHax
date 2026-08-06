@@ -126,7 +126,6 @@ export function DashboardSidebar({
      onClick={logoutUserAction}
      variant="ghost"
      className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-     asChild
     >
      <LogOut className="h-4 w-4" />
      Sign Out

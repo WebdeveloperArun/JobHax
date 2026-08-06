@@ -41,7 +41,7 @@ export const registerUserAction = async (data: RegisterUserData) => {
                 };
         }
         const hashedPassword = await argon2.hash(password);
-
+        
         await db.transaction(async (tx) => {
             const [result] = await tx
                 .insert(users)
@@ -53,9 +53,9 @@ export const registerUserAction = async (data: RegisterUserData) => {
                 await tx.insert(employers).values({ id: result.insertId });
             }
 
-            await createSessionAndSetCookies(result.insertId);
+            await createSessionAndSetCookies(result.insertId, tx);
         });
-
+        
         return {
             status: "SUCCESS",
             message: "User registered successfully",

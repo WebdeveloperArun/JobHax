@@ -1,27 +1,56 @@
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { 
-  Briefcase, 
-  Users, 
-  Eye, 
+import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Briefcase,
+  Users,
+  Eye,
   TrendingUp,
   ArrowRight,
   MapPin,
   Clock,
   CheckCircle,
-  PlusCircle
-} from "lucide-react"
-import Link from "next/link"
+  PlusCircle,
+  BadgeCheckIcon,
+  ChevronRightIcon,
+  ShieldAlertIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { getCurrentUser } from "@/features/auth/server/auth.queries";
+import { redirect } from "next/navigation";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import { getCurrentEmployerDetails } from "@/features/auth/server/employer.queries";
 
 const stats = [
-  { label: "Active Jobs", value: 8, icon: Briefcase, change: "+2 this month" },
-  { label: "Total Applicants", value: 156, icon: Users, change: "+24 this week" },
+  {
+    label: "Active Jobs",
+    value: 8,
+    icon: Briefcase,
+    change: "+2 this month",
+  },
+  {
+    label: "Total Applicants",
+    value: 156,
+    icon: Users,
+    change: "+24 this week",
+  },
   { label: "Job Views", value: 2450, icon: Eye, change: "+340 this week" },
-  { label: "Hired This Month", value: 3, icon: CheckCircle, change: "+1 this week" },
-]
+  {
+    label: "Hired This Month",
+    value: 3,
+    icon: CheckCircle,
+    change: "+1 this week",
+  },
+];
 
 const activeJobs = [
   {
@@ -57,7 +86,7 @@ const activeJobs = [
     posted: "2 weeks ago",
     status: "active",
   },
-]
+];
 
 const recentApplicants = [
   {
@@ -100,26 +129,55 @@ const recentApplicants = [
     appliedDate: "1 day ago",
     match: 85,
   },
-]
+];
 
-export default function EmployerDashboard() {
+export default async function EmployerDashboard() {
+  const data = await getCurrentEmployerDetails();
+  console.log("data: ", data);
+
   return (
     <div className="flex min-h-screen">
-      <DashboardSidebar 
-        userType="employer" 
-        userName="TechCorp Inc." 
-        userEmail="hr@techcorp.com" 
+      <DashboardSidebar
+        userType="employer"
+        userName="TechCorp Inc."
+        userEmail="hr@techcorp.com"
       />
-      
+
       <main className="flex-1 overflow-auto">
         <div className="container mx-auto p-6 lg:p-8">
           {/* Header */}
           <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Welcome back, TechCorp!</h1>
-              <p className="text-muted-foreground mt-1">
+              <h1 className="text-2xl font-bold text-foreground">
+                Welcome Employer, {data?.name}!
+              </h1>
+              <p className="text-muted-foreground my-1">
                 Here&apos;s an overview of your recruitment activity
               </p>
+              {!data?.isProfileCompleted && (
+                <Item variant="destructive" className="mt-4 text-white w-3/4">
+                  <ItemMedia variant="icon" className="bg-destructive">
+                    <ShieldAlertIcon />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle className=" text-[.9rem]">
+                      Incomplete Profile
+                    </ItemTitle>
+                    <ItemDescription className="text-white/80 text-[.8rem]">
+                      You haven't completed your employer profile yet. Please
+                      complete your profile to post jobs and access all
+                      features.
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <Button size="sm" variant="destructive" asChild>
+                      <Link href="/employer/company" className=" text-[.9rem]">
+                        Complete Profile
+                      </Link>
+                    </Button>
+                  </ItemActions>
+                </Item>
+              )}
             </div>
             <Button asChild>
               <Link href="/employer/post-job">
@@ -141,8 +199,12 @@ export default function EmployerDashboard() {
                     <TrendingUp className="h-4 w-4 text-accent" />
                   </div>
                   <div className="mt-4">
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {stat.value}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {stat.label}
+                    </p>
                   </div>
                   <p className="text-xs text-accent mt-2">{stat.change}</p>
                 </CardContent>
@@ -162,12 +224,20 @@ export default function EmployerDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {activeJobs.map((job) => (
-                    <div key={job.id} className="flex items-center gap-4 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                    <div
+                      key={job.id}
+                      className="flex items-center gap-4 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-foreground truncate">{job.title}</p>
+                          <p className="font-medium text-foreground truncate">
+                            {job.title}
+                          </p>
                           {job.newApplicants > 0 && (
-                            <Badge variant="secondary" className="bg-accent/10 text-accent">
+                            <Badge
+                              variant="secondary"
+                              className="bg-accent/10 text-accent"
+                            >
                               +{job.newApplicants} new
                             </Badge>
                           )}
@@ -184,8 +254,12 @@ export default function EmployerDashboard() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-medium">{job.applicants} applicants</p>
-                        <p className="text-xs text-muted-foreground">{job.views} views</p>
+                        <p className="text-sm font-medium">
+                          {job.applicants} applicants
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {job.views} views
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -204,14 +278,19 @@ export default function EmployerDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {recentApplicants.map((applicant) => (
-                    <div key={applicant.id} className="flex items-center gap-4 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                    <div
+                      key={applicant.id}
+                      className="flex items-center gap-4 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    >
                       <Avatar>
                         <AvatarFallback className="bg-primary/10 text-primary">
                           {applicant.avatar}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{applicant.name}</p>
+                        <p className="font-medium text-foreground truncate">
+                          {applicant.name}
+                        </p>
                         <p className="text-sm text-muted-foreground truncate">
                           {applicant.role} • {applicant.experience}
                         </p>
@@ -220,8 +299,12 @@ export default function EmployerDashboard() {
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-sm font-medium text-accent">{applicant.match}% match</div>
-                        <p className="text-xs text-muted-foreground">{applicant.appliedDate}</p>
+                        <div className="text-sm font-medium text-accent">
+                          {applicant.match}% match
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {applicant.appliedDate}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -237,25 +320,41 @@ export default function EmployerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex-col gap-2"
+                  asChild
+                >
                   <Link href="/employer/post-job">
                     <PlusCircle className="h-6 w-6 text-primary" />
                     <span>Post New Job</span>
                   </Link>
                 </Button>
-                <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex-col gap-2"
+                  asChild
+                >
                   <Link href="/employer/candidates">
                     <Users className="h-6 w-6 text-primary" />
                     <span>Browse Candidates</span>
                   </Link>
                 </Button>
-                <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex-col gap-2"
+                  asChild
+                >
                   <Link href="/employer/jobs">
                     <Briefcase className="h-6 w-6 text-primary" />
                     <span>Manage Jobs</span>
                   </Link>
                 </Button>
-                <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
+                <Button
+                  variant="outline"
+                  className="h-auto py-4 flex-col gap-2"
+                  asChild
+                >
                   <Link href="/employer/analytics">
                     <TrendingUp className="h-6 w-6 text-primary" />
                     <span>View Analytics</span>
@@ -267,5 +366,5 @@ export default function EmployerDashboard() {
         </div>
       </main>
     </div>
-  )
+  );
 }
