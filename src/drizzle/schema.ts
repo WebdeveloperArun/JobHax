@@ -1,5 +1,15 @@
 import { relations } from 'drizzle-orm';
-import { int, mysqlTable, text, varchar, timestamp, mysqlEnum, date, year } from 'drizzle-orm/mysql-core';
+import { int, mysqlTable, text, varchar, timestamp, mysqlEnum, date, year, json } from 'drizzle-orm/mysql-core';
+
+export type EmployerMetadata = {
+    tagline?: string;
+    culture?: string;
+    benefits?: string;
+    socialLinks?: {
+        linkedin?: string;
+        twitter?: string;
+    },
+};
 
 export const users = mysqlTable('users', {
     id: int("id").autoincrement().primaryKey(),
@@ -33,11 +43,12 @@ export const employers = mysqlTable("employers", {
     name: varchar("name", { length: 255 }),
     description: text("description"),
     bannerImageUrl: text("banner_image_url"),
-    organizationType: varchar("organization_type", { length: 100 }),
+    industry: varchar("organization_type", { length: 100 }),
     teamSize: varchar("team_size", { length: 50 }),
     yearOfEstablishment: year("year_of_establishment"), // MySQL YEAR type
     websiteUrl: varchar("website_url", { length: 255 }),
     location: varchar("location", { length: 255 }),
+    metadata: json("metadata").$type<EmployerMetadata>(),
     deletedAt: timestamp("deleted_at", { mode: "string" }),
     createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),

@@ -8,18 +8,13 @@ import {
   Users,
   Eye,
   TrendingUp,
-  ArrowRight,
   MapPin,
   Clock,
   CheckCircle,
   PlusCircle,
-  BadgeCheckIcon,
-  ChevronRightIcon,
   ShieldAlertIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { getCurrentUser } from "@/features/auth/server/auth.queries";
-import { redirect } from "next/navigation";
 import {
   Item,
   ItemActions,
@@ -28,7 +23,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item";
-import { getCurrentEmployerDetails } from "@/features/auth/server/employer.queries";
+import { getCurrentEmployerDetails } from "@/features/employer-features/employer.queries";
 
 const stats = [
   {
