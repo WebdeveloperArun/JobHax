@@ -1,3 +1,4 @@
+"use server";
 import { db } from "@/src/config/db";
 import { getCurrentUser } from "../auth/server/auth.queries";
 import { updateCompanyProfileData, UpdateCompanyProfileData } from "./employer.schema";
@@ -15,8 +16,8 @@ export const updateEmployerProfile = async (data: UpdateCompanyProfileData) => {
             return { status: "ERROR", message: "Unauthorized" };
         }
 
-        const updatedData = await db.update(employers).set(validatedData).where(eq(employers.id, currentUser.id));
-        return { status: "SUCCESS", updatedData, message: "Company profile updated successfully" };
+        await db.update(employers).set(validatedData).where(eq(employers.id, currentUser.id));
+        return { status: "SUCCESS", message: "Company profile updated successfully" };
     } catch (error) {
         return { status: "ERROR", message: "Failed to update company profile" };
     }

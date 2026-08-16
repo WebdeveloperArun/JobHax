@@ -49,7 +49,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex">
       {/* Left Panel - Visual */}
       <div className="relative hidden w-0 flex-1 lg:block">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80">
+        <div className="absolute inset-0 bg-linear-to-br from-primary to-primary/80">
           <div className="flex h-full flex-col items-center justify-center px-12 text-primary-foreground">
             <div className="max-w-md text-center">
               <h2 className="text-3xl font-bold text-balance">
