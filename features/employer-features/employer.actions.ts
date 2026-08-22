@@ -2,7 +2,7 @@
 import { db } from "@/src/config/db";
 import { getCurrentUser } from "../auth/server/auth.queries";
 import { updateCompanyProfileData, UpdateCompanyProfileData } from "./employer.schema";
-import { employers } from "@/src/drizzle/schema";
+import { employers, users } from "@/src/drizzle/schema";
 import { eq } from "drizzle-orm";
 
 
@@ -15,8 +15,11 @@ export const updateEmployerProfile = async (data: UpdateCompanyProfileData) => {
         if (!currentUser || currentUser.role !== "employer") {
             return { status: "ERROR", message: "Unauthorized" };
         }
-
-        await db.update(employers).set(validatedData).where(eq(employers.id, currentUser.id));
+        const { avatarUrl, ...rest } = validatedData;
+        if (avatarUrl != currentUser.avatarUrl) {
+            await db.update(users).set({ avatarUrl }).where(eq(users.id, currentUser.id));
+        }
+        await db.update(employers).set(rest).where(eq(employers.id, currentUser.id));
         return { status: "SUCCESS", message: "Company profile updated successfully" };
     } catch (error) {
         return { status: "ERROR", message: "Failed to update company profile" };

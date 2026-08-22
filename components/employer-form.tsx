@@ -27,6 +27,10 @@ import {
   Users,
   Calendar,
   Building2,
+  Loader,
+  Upload,
+  X,
+  Loader2,
 } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import {
@@ -35,13 +39,20 @@ import {
 } from "@/features/employer-features/employer.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateEmployerProfile } from "@/features/employer-features/employer.actions";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { toast } from "sonner";
+import { useUploadThing } from "@/src/utils/uploadthing";
+import { ComponentProps, useState } from "react";
+import { useDropzone } from "@uploadthing/react";
 
 const EmployerForm = ({employer}: {employer: any}) => {
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    reset,
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<CompanyProfileData>({
     resolver: zodResolver(companyProfileData),
     defaultValues: {
@@ -54,6 +65,7 @@ const EmployerForm = ({employer}: {employer: any}) => {
         "My Company is a leading technology company...",
       industry: employer?.industry || "technology",
       teamSize: employer?.teamSize || "500-1000",
+      avatarUrl: employer?.avatarUrl,
       yearOfEstablishment:
         employer?.yearOfEstablishment || 2015,
       location: employer?.location || "San Francisco, CA",
@@ -83,7 +95,7 @@ const EmployerForm = ({employer}: {employer: any}) => {
       yearOfEstablishment: data.yearOfEstablishment,
       location: data.location,
       websiteUrl: data.websiteUrl,
-
+      avatarUrl: data.avatarUrl,
       metadata: {
         tagline: data.tagline,
         culture: data.culture,
@@ -117,17 +129,36 @@ const EmployerForm = ({employer}: {employer: any}) => {
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row gap-6">
                 <div className="relative">
-                  <Avatar className="h-24 w-24">
+                  <Label>Upload Logo</Label>
+                  <Avatar className="h-25 w-25">
                     <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                      TC
+                      <Controller
+                        name="avatarUrl"
+                        control={control}
+                        render={({ field, fieldState }) => (
+                          <div className="space-y-2">
+                            <ImageUpload
+                              value={field.value}
+                              onChange={field.onChange}
+                              boxText={
+                                "A photo larger than 400 pixels works best. Max photo size 5 MB."
+                              }
+                              className={cn(
+                                fieldState.error &&
+                                  "ring-1 ring-destructive/50 rounded-lg",
+                                "h-24 w-24 rounded-lg",
+                              )}
+                            />
+                            {fieldState.error && (
+                              <p className="text-sm text-destructive">
+                                {fieldState.error.message}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      />
                     </AvatarFallback>
                   </Avatar>
-                  <Button
-                    size="icon"
-                    className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
                 </div>
                 <div className="flex-1 space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -394,8 +425,15 @@ const EmployerForm = ({employer}: {employer: any}) => {
 
           {/* Save Button */}
           <div className="flex justify-end gap-4">
-            <Button variant="outline">Cancel</Button>
-            <Button type="submit">Save Changes</Button>
+            {isDirty && (
+              <Button variant="outline" onClick={() => reset()}>
+                Cancel
+              </Button>
+            )}
+            <Button type="submit" disabled={!isDirty}>
+              {isSubmitting && <Loader className="w-4 h-4 animate-spin" />}
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
         </div>
       </form>
@@ -404,3 +442,157 @@ const EmployerForm = ({employer}: {employer: any}) => {
 };
 
 export default EmployerForm;
+
+type ImageUploadProps = Omit<ComponentProps<"div">, "onChange"> & {
+  value?: string;
+  boxText?: string;
+  onChange: (url: string) => void;
+};
+
+export const ImageUpload = ({
+  value,
+  onChange,
+  className,
+  boxText,
+  ...props
+}: ImageUploadProps) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const { startUpload } = useUploadThing("imageUploader", {
+    onClientUploadComplete: (res) => {
+      if (res && res[0]) {
+        onChange(res[0].ufsUrl);
+        toast.success("Image uploaded successfully!");
+      }
+      setIsUploading(false);
+      setPreviewUrl(null);
+    },
+    onUploadError: (error: Error) => {
+      toast.error(`Upload failed: ${error.message}`);
+      setIsUploading(false);
+      setPreviewUrl(null);
+    },
+  });
+
+  const handleFileSelect = async (files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => setPreviewUrl(reader.result as string);
+    reader.readAsDataURL(file);
+
+    setIsUploading(true);
+    await startUpload([file]);
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: handleFileSelect,
+    accept: { "image/*": [".png", ".jpg", ".jpeg", ".webp"] },
+    maxFiles: 1,
+    disabled: isUploading,
+  });
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange("");
+    setPreviewUrl(null);
+  };
+
+  if (value || previewUrl)
+    return (
+      <div
+        className={cn(
+          "overflow-hidden border-2 border-border relative group rounded-lg",
+          className,
+        )}
+        {...props}
+      >
+        <Image
+          src={previewUrl || value || ""}
+          alt="Uploaded image"
+          height={200}
+          width={200}
+          className="w-full h-full object-cover"
+        />
+
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="w-8 h-8 text-white animate-spin" />
+              <p className="text-sm text-white font-medium">Uploading...</p>
+            </div>
+          </div>
+        )}
+
+        {!isUploading && (
+          <div
+            {...getRootProps()}
+            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <input {...getInputProps()} />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Change
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleRemove}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Remove
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+
+  return (
+    <div
+      {...getRootProps()}
+      className={cn(
+        "border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors",
+        isDragActive
+          ? "border-primary bg-primary/5"
+          : "border-muted-foreground/25 hover:border-primary/50",
+        isUploading && "opacity-50 pointer-events-none",
+        className,
+      )}
+      {...props}
+    >
+      <input {...getInputProps()} />
+      <div className="flex flex-col items-center">
+        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3">
+          <Upload className="w-5 h-5 text-muted-foreground" />
+        </div>
+        <p className="text-sm font-medium text-foreground mb-1">
+          <span className="text-primary">Browse photo</span> or drop here
+        </p>
+        {boxText && (
+          <p className="text-xs text-muted-foreground text-center px-4 max-w-xs">
+            {boxText}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+

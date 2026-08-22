@@ -42,7 +42,6 @@ export const employers = mysqlTable("employers", {
 
     name: varchar("name", { length: 255 }),
     description: text("description"),
-    bannerImageUrl: text("banner_image_url"),
     industry: varchar("organization_type", { length: 100 }),
     teamSize: varchar("team_size", { length: 50 }),
     yearOfEstablishment: year("year_of_establishment"), // MySQL YEAR type
