@@ -13,7 +13,7 @@ export default async function CompanyProfilePage() {
         userEmail="hr@techcorp.com"
       />
 
-      <EmployerForm employer={employer?.employerDetails}/>
+      <EmployerForm employer={employer?.employerDetails} avatarUrl={employer?.avatarUrl}/>
     </div>
   );
 }

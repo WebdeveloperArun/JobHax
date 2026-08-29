@@ -46,7 +46,7 @@ import { useUploadThing } from "@/src/utils/uploadthing";
 import { ComponentProps, useState } from "react";
 import { useDropzone } from "@uploadthing/react";
 
-const EmployerForm = ({employer}: {employer: any}) => {
+const EmployerForm = ({employer, avatarUrl}: {employer: any, avatarUrl: any}) => {
   const {
     register,
     handleSubmit,
@@ -65,7 +65,7 @@ const EmployerForm = ({employer}: {employer: any}) => {
         "My Company is a leading technology company...",
       industry: employer?.industry || "technology",
       teamSize: employer?.teamSize || "500-1000",
-      avatarUrl: employer?.avatarUrl,
+      avatarUrl: avatarUrl,
       yearOfEstablishment:
         employer?.yearOfEstablishment || 2015,
       location: employer?.location || "San Francisco, CA",
@@ -128,10 +128,10 @@ const EmployerForm = ({employer}: {employer: any}) => {
           <Card className="mb-6">
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row gap-6">
-                <div className="relative">
+                <div className="relative flex items-center flex-col gap-2">
                   <Label>Upload Logo</Label>
-                  <Avatar className="h-25 w-25">
-                    <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                  <Avatar className="h-28 w-28 border border-black rounded-full">
+                    <AvatarFallback className="w-full h-full">
                       <Controller
                         name="avatarUrl"
                         control={control}
@@ -139,6 +139,7 @@ const EmployerForm = ({employer}: {employer: any}) => {
                           <div className="space-y-2">
                             <ImageUpload
                               value={field.value}
+                              url={avatarUrl}
                               onChange={field.onChange}
                               boxText={
                                 "A photo larger than 400 pixels works best. Max photo size 5 MB."
@@ -146,7 +147,7 @@ const EmployerForm = ({employer}: {employer: any}) => {
                               className={cn(
                                 fieldState.error &&
                                   "ring-1 ring-destructive/50 rounded-lg",
-                                "h-24 w-24 rounded-lg",
+                                "h-full w-full rounded-full",
                               )}
                             />
                             {fieldState.error && (
@@ -445,6 +446,7 @@ export default EmployerForm;
 
 type ImageUploadProps = Omit<ComponentProps<"div">, "onChange"> & {
   value?: string;
+  url: string | null;
   boxText?: string;
   onChange: (url: string) => void;
 };
@@ -452,12 +454,13 @@ type ImageUploadProps = Omit<ComponentProps<"div">, "onChange"> & {
 export const ImageUpload = ({
   value,
   onChange,
+  url,
   className,
   boxText,
   ...props
 }: ImageUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(url);
 
   const { startUpload } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res) => {
@@ -542,15 +545,6 @@ export const ImageUpload = ({
             className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
           >
             <input {...getInputProps()} />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Change
-            </Button>
             <Button
               type="button"
               variant="destructive"
