@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { int, mysqlTable, text, varchar, timestamp, mysqlEnum, date, year, json } from 'drizzle-orm/mysql-core';
+import { int, mysqlTable, text, varchar, timestamp, mysqlEnum, date, year, json, serial, boolean } from 'drizzle-orm/mysql-core';
 
 export type EmployerMetadata = {
     tagline?: string;
@@ -100,3 +100,53 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
         references: [users.id],
     }),
 }));
+
+
+export const jobs = mysqlTable("jobs", {
+    id: serial("id").primaryKey(),
+    employerId: int("employer_id").notNull().references(() => employers.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    department: mysqlEnum("department", [
+        "engineering",
+        "design",
+        "marketing",
+        "sales",
+        "hr",
+        "finance",
+    ]),
+    employmentType: mysqlEnum("employment_type", [
+        "full-time",
+        "part-time",
+        "contract",
+        "internship",
+    ]).notNull(),
+    location: varchar("location", { length: 255 }).notNull(),
+    workplaceType: mysqlEnum("workplace_type", [
+        "onsite",
+        "remote",
+        "hybrid",
+    ]),
+    salaryMin: int("salary_min"),
+    salaryMax: int("salary_max"),
+    experienceLevel: mysqlEnum("experience_level", [
+        "entry",
+        "mid",
+        "senior",
+        "lead",
+        "executive",
+    ]),
+    description: text("description").notNull(),
+    requirements: text("requirements"),
+    benefits: text("benefits"),
+    skills: json("skills").$type<string[]>(),
+    isFeatured: boolean("is_featured").default(false),
+    isUrgent: boolean("is_urgent").default(false),
+    notifyCandidates: boolean("notify_candidates").default(true),
+    status: mysqlEnum("status", ["draft", "published", "closed"]).default("published"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+
+export type Job = typeof jobs.$inferSelect;
+export type NewJob = typeof jobs.$inferInsert;

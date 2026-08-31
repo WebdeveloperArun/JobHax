@@ -1,8 +1,8 @@
 "use server";
 import { db } from "@/src/config/db";
 import { getCurrentUser } from "../auth/server/auth.queries";
-import { updateCompanyProfileData, UpdateCompanyProfileData } from "./employer.schema";
-import { employers, users } from "@/src/drizzle/schema";
+import { postJobType, PostJobType, updateCompanyProfileData, UpdateCompanyProfileData } from "./employer.schema";
+import { employers, jobs, users } from "@/src/drizzle/schema";
 import { eq } from "drizzle-orm";
 
 
@@ -23,5 +23,22 @@ export const updateEmployerProfile = async (data: UpdateCompanyProfileData) => {
         return { status: "SUCCESS", message: "Company profile updated successfully" };
     } catch (error) {
         return { status: "ERROR", message: "Failed to update company profile" };
+    }
+}
+
+export const postJob = async (data: PostJobType) => {
+    try {
+        const { data: validatedData, error } = postJobType.safeParse(data);
+        if (error) return { status: "ERROR", message: error.issues[0].message };
+
+        const currentUser = await getCurrentUser();
+        if (!currentUser || currentUser.role !== "employer") {
+            return { status: "ERROR", message: "Unauthorized" };
+        }
+
+        await db.insert(jobs).values({ ...validatedData, employerId: currentUser.id });
+        return { status: "SUCCESS", message: "Job posted successfully" };
+    } catch (error) {
+        return { status: "ERROR", message: "Failed to post a job" };
     }
 }

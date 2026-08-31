@@ -38,3 +38,46 @@ export const updateCompanyProfileData = z.object({
 
 export type CompanyProfileData = z.infer<typeof companyProfileData>
 export type UpdateCompanyProfileData = z.infer<typeof updateCompanyProfileData>
+
+export const postJobType = z.object({
+    title: z.string().max(255),
+    department: z.enum([
+        "engineering",
+        "design",
+        "marketing",
+        "sales",
+        "hr",
+        "finance",
+    ]),
+    employmentType: z.enum([
+        "full-time",
+        "part-time",
+        "contract",
+        "internship",
+    ]),
+    location: z.string().max(255),
+    workplaceType: z.enum([
+        "onsite",
+        "remote",
+        "hybrid",
+    ]),
+    salaryMin: z.number().min(0),
+    salaryMax: z.number().min(0),
+    experienceLevel: z.enum([
+        "entry",
+        "mid",
+        "senior",
+        "lead",
+        "executive",
+    ]),
+    description: z.string(),
+    requirements: z.string().optional(),
+    benefits: z.string().optional(),
+    skills: z.array(z.string()),
+    isFeatured: z.boolean().default(false),
+    isUrgent: z.boolean().default(false),
+    notifyCandidates: z.boolean().default(true),
+    status: z.enum(["draft", "published", "closed"]).default("published"),
+})
+
+export type PostJobType = z.infer<typeof postJobType>
