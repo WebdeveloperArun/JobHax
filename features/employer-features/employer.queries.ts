@@ -1,7 +1,7 @@
 import { db } from "@/src/config/db";
-import { employers } from "@/src/drizzle/schema";
+import { employers, jobs } from "@/src/drizzle/schema";
 import { getCurrentUser } from "../auth/server/auth.queries";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export const getCurrentEmployerDetails = async () => {
     const currentUser = await getCurrentUser();
@@ -16,13 +16,27 @@ export const getCurrentEmployerDetails = async () => {
         .where(eq(employers.id, currentUser.id));
 
     const isProfileCompleted =
-        employer.name &&
-        employer.description &&
-        employer.industry &&
-        employer.teamSize &&
-        employer.websiteUrl &&
-        employer.location &&
-        employer.yearOfEstablishment;
+        employer?.name &&
+        employer?.description &&
+        employer?.industry &&
+        employer?.teamSize &&
+        employer?.websiteUrl &&
+        employer?.location &&
+        employer?.yearOfEstablishment;
 
     return { ...currentUser, employerDetails: employer, isProfileCompleted };
 };
+
+export const getEmployerJobs = async () => {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser || currentUser.role !== "employer") return [];
+
+    const employerJobs = await db
+        .select()
+        .from(jobs)
+        .where(eq(jobs.employerId, currentUser.id))
+        .orderBy(desc(jobs.createdAt));
+
+    return employerJobs;
+};

@@ -1,4 +1,4 @@
-import {z} from "zod";
+import { z } from "zod";
 
 export const companyProfileData = z.object({
     companyName: z.string().min(2, "Company name is required"),
@@ -77,7 +77,7 @@ export const postJobType = z.object({
     isFeatured: z.boolean().default(false),
     isUrgent: z.boolean().default(false),
     notifyCandidates: z.boolean().default(true),
-    status: z.enum(["draft", "published", "closed"]).default("published"),
+    status: z.enum(["draft", "published", "paused", "closed"]).default("published"),
 })
 
 export type PostJobType = z.infer<typeof postJobType>

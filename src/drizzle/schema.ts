@@ -142,7 +142,7 @@ export const jobs = mysqlTable("jobs", {
     isFeatured: boolean("is_featured").default(false),
     isUrgent: boolean("is_urgent").default(false),
     notifyCandidates: boolean("notify_candidates").default(true),
-    status: mysqlEnum("status", ["draft", "published", "closed"]).default("published"),
+    status: mysqlEnum("status", ["draft", "published", "paused", "closed"]).default("published"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
 });
