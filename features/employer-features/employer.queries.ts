@@ -1,5 +1,5 @@
 import { db } from "@/src/config/db";
-import { employers, jobs } from "@/src/drizzle/schema";
+import { employers, jobs, jobApplications } from "@/src/drizzle/schema";
 import { getCurrentUser } from "../auth/server/auth.queries";
 import { eq, desc } from "drizzle-orm";
 
@@ -39,4 +39,93 @@ export const getEmployerJobs = async () => {
         .orderBy(desc(jobs.createdAt));
 
     return employerJobs;
-};
+};
+
+export const getEmployerCandidatesData = async () => {
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser || currentUser.role !== "employer") {
+        return null;
+    }
+
+    // 1. Fetch all employer jobs
+    const employerJobs = await db
+        .select()
+        .from(jobs)
+        .where(eq(jobs.employerId, currentUser.id))
+        .orderBy(desc(jobs.createdAt));
+
+    if (employerJobs.length === 0) {
+        return {
+            employer: currentUser,
+            jobs: [],
+            candidates: [],
+            counts: {
+                total: 0,
+                starred: 0,
+                new: 0,
+                screening: 0,
+                interview: 0,
+                offered: 0,
+                rejected: 0,
+            }
+        };
+    }
+
+    const jobIds = employerJobs.map(j => Number(j.id));
+
+    // 2. Fetch all applications for employer's jobs
+    const applications = await db
+        .select({
+            id: jobApplications.id,
+            jobId: jobApplications.jobId,
+            applicantId: jobApplications.applicantId,
+            candidateName: jobApplications.candidateName,
+            candidateEmail: jobApplications.candidateEmail,
+            candidatePhone: jobApplications.candidatePhone,
+            candidateLocation: jobApplications.candidateLocation,
+            candidateTitle: jobApplications.candidateTitle,
+            experience: jobApplications.experience,
+            education: jobApplications.education,
+            skills: jobApplications.skills,
+            resumeUrl: jobApplications.resumeUrl,
+            coverLetter: jobApplications.coverLetter,
+            portfolioUrl: jobApplications.portfolioUrl,
+            linkedinUrl: jobApplications.linkedinUrl,
+            status: jobApplications.status,
+            isStarred: jobApplications.isStarred,
+            matchScore: jobApplications.matchScore,
+            interviewDate: jobApplications.interviewDate,
+            interviewType: jobApplications.interviewType,
+            interviewNotes: jobApplications.interviewNotes,
+            notes: jobApplications.notes,
+            appliedAt: jobApplications.appliedAt,
+            updatedAt: jobApplications.updatedAt,
+            jobTitle: jobs.title,
+            jobDepartment: jobs.department,
+            jobLocation: jobs.location,
+            jobEmploymentType: jobs.employmentType,
+        })
+        .from(jobApplications)
+        .innerJoin(jobs, eq(jobApplications.jobId, jobs.id))
+        .where(eq(jobs.employerId, currentUser.id))
+        .orderBy(desc(jobApplications.appliedAt));
+
+    const counts = {
+        total: applications.length,
+        starred: applications.filter(a => a.isStarred).length,
+        new: applications.filter(a => a.status === "new").length,
+        screening: applications.filter(a => a.status === "screening").length,
+        interview: applications.filter(a => a.status === "interview").length,
+        offered: applications.filter(a => a.status === "offered").length,
+        rejected: applications.filter(a => a.status === "rejected").length,
+    };
+
+    return {
+        employer: currentUser,
+        jobs: employerJobs,
+        candidates: applications,
+        counts,
+    };
+};
+

@@ -134,8 +134,8 @@ export default async function EmployerDashboard() {
     <div className="flex min-h-screen">
       <DashboardSidebar
         userType="employer"
-        userName="TechCorp Inc."
-        userEmail="hr@techcorp.com"
+        userName={data?.name || data?.employerDetails?.name || undefined}
+        userEmail={data?.email || undefined}
       />
 
       <main className="flex-1 overflow-auto">

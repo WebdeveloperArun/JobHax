@@ -325,8 +325,6 @@ export default function EmployerJobsPage() {
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar 
         userType="employer" 
-        userName="TechCorp Inc." 
-        userEmail="hr@techcorp.com" 
       />
       
       <main className="flex-1 overflow-auto">

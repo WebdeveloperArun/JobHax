@@ -150,3 +150,53 @@ export const jobs = mysqlTable("jobs", {
 
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
+
+export const jobApplications = mysqlTable("job_applications", {
+    id: serial("id").primaryKey(),
+    jobId: int("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+    applicantId: int("applicant_id").references(() => users.id, { onDelete: "set null" }),
+    candidateName: varchar("candidate_name", { length: 255 }).notNull(),
+    candidateEmail: varchar("candidate_email", { length: 255 }).notNull(),
+    candidatePhone: varchar("candidate_phone", { length: 50 }),
+    candidateLocation: varchar("candidate_location", { length: 255 }),
+    candidateTitle: varchar("candidate_title", { length: 255 }),
+    experience: varchar("experience", { length: 100 }),
+    education: varchar("education", { length: 100 }),
+    skills: json("skills").$type<string[]>(),
+    resumeUrl: text("resume_url"),
+    coverLetter: text("cover_letter"),
+    portfolioUrl: varchar("portfolio_url", { length: 255 }),
+    linkedinUrl: varchar("linkedin_url", { length: 255 }),
+    status: mysqlEnum("status", ["new", "screening", "interview", "offered", "rejected"]).default("new").notNull(),
+    isStarred: boolean("is_starred").default(false).notNull(),
+    matchScore: int("match_score").default(85),
+    interviewDate: timestamp("interview_date"),
+    interviewType: varchar("interview_type", { length: 50 }),
+    interviewNotes: text("interview_notes"),
+    notes: text("notes"),
+    appliedAt: timestamp("applied_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const jobsRelations = relations(jobs, ({ one, many }) => ({
+    employer: one(employers, {
+        fields: [jobs.employerId],
+        references: [employers.id],
+    }),
+    applications: many(jobApplications),
+}));
+
+export const jobApplicationsRelations = relations(jobApplications, ({ one }) => ({
+    job: one(jobs, {
+        fields: [jobApplications.jobId],
+        references: [jobs.id],
+    }),
+    applicant: one(users, {
+        fields: [jobApplications.applicantId],
+        references: [users.id],
+    }),
+}));
+
+export type JobApplication = typeof jobApplications.$inferSelect;
+export type NewJobApplication = typeof jobApplications.$inferInsert;
+export type ApplicationStatus = "new" | "screening" | "interview" | "offered" | "rejected";

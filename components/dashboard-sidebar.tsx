@@ -22,8 +22,8 @@ import {
  BarChart3,
  MessageSquare,
 } from "lucide-react";
-import { useState } from "react";
-import { logoutUserAction } from "@/features/auth/server/auth.actions";
+import { useState, useEffect } from "react";
+import { logoutUserAction, getCurrentUserAction } from "@/features/auth/server/auth.actions";
 
 interface SidebarLink {
  href: string;
@@ -33,8 +33,8 @@ interface SidebarLink {
 
 interface DashboardSidebarProps {
  userType: "candidate" | "employer";
- userName: string;
- userEmail: string;
+ userName?: string;
+ userEmail?: string;
 }
 
 const candidateLinks: SidebarLink[] = [
@@ -64,8 +64,39 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
  const pathname = usePathname();
  const [isOpen, setIsOpen] = useState(false);
+ const [fetchedUser, setFetchedUser] = useState<{
+  name: string;
+  userName?: string;
+  email: string;
+  avatarUrl?: string | null;
+ } | null>(null);
+
+ useEffect(() => {
+  getCurrentUserAction().then((u) => {
+   if (u) {
+    setFetchedUser({
+     name: u.name,
+     userName: u.userName,
+     email: u.email,
+     avatarUrl: u.avatarUrl,
+    });
+   }
+  });
+ }, []);
 
  const links = userType === "candidate" ? candidateLinks : employerLinks;
+
+ const isPlaceholder = !userName || userName === "TechCorp Inc." || userName === "John Doe";
+ const displayName = fetchedUser?.name || (!isPlaceholder ? userName : "") || (userType === "employer" ? "Employer" : "Candidate");
+ const displayEmail = fetchedUser?.email || (!isPlaceholder ? userEmail : "") || "";
+
+ const initials = displayName
+  .split(" ")
+  .filter(Boolean)
+  .map((n) => n[0])
+  .join("")
+  .slice(0, 2)
+  .toUpperCase() || (userType === "employer" ? "EM" : "CA");
 
  const SidebarContent = () => (
   <div className="flex h-full flex-col">
@@ -82,17 +113,14 @@ export function DashboardSidebar({
    {/* User Info */}
    <div className="border-b border-sidebar-border p-4">
     <div className="flex items-center gap-3">
-     <Avatar className="h-10 w-10">
-      <AvatarFallback className="bg-primary/10 text-primary">
-       {userName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")}
+     <Avatar className="h-10 w-10 border border-primary/20">
+      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+       {initials}
       </AvatarFallback>
      </Avatar>
      <div className="min-w-0 flex-1">
-      <p className="truncate font-medium text-sidebar-foreground">{userName}</p>
-      <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
+      <p className="truncate font-medium text-sidebar-foreground">{displayName}</p>
+      <p className="truncate text-xs text-muted-foreground">{displayEmail}</p>
      </div>
      <Button variant="ghost" size="icon" className="shrink-0">
       <Bell className="h-4 w-4" />

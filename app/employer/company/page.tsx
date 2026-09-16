@@ -9,8 +9,8 @@ export default async function CompanyProfilePage() {
     <div className="flex min-h-screen">
       <DashboardSidebar
         userType="employer"
-        userName="TechCorp Inc."
-        userEmail="hr@techcorp.com"
+        userName={employer?.name || employer?.employerDetails?.name || undefined}
+        userEmail={employer?.email || undefined}
       />
 
       <EmployerForm employer={employer?.employerDetails} avatarUrl={employer?.avatarUrl}/>

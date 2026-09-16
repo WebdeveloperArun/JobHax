@@ -17,6 +17,7 @@ import {
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHash } from "crypto";
+import { getCurrentUser } from "./auth.queries";
 
 export const registerUserAction = async (data: RegisterUserData) => {
     try {
@@ -117,3 +118,21 @@ export const logoutUserAction = async () => {
 
     return redirect("/login");
 };
+
+export const getCurrentUserAction = async () => {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return null;
+        return {
+            id: user.id,
+            name: user.name,
+            userName: user.userName,
+            email: user.email,
+            role: user.role,
+            avatarUrl: user.avatarUrl,
+        };
+    } catch {
+        return null;
+    }
+};
+
