@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Camera,
   Globe,
@@ -31,6 +30,7 @@ import {
   Upload,
   X,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import {
@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useUploadThing } from "@/src/utils/uploadthing";
-import { ComponentProps, useState } from "react";
+import { ComponentProps, useState, useEffect } from "react";
 import { useDropzone } from "@uploadthing/react";
 
 const EmployerForm = ({employer, avatarUrl}: {employer: any, avatarUrl: any}) => {
@@ -127,41 +127,34 @@ const EmployerForm = ({employer, avatarUrl}: {employer: any, avatarUrl: any}) =>
           {/* Company Logo & Basic Info */}
           <Card className="mb-6">
             <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row gap-6">
-                <div className="relative flex items-center flex-col gap-2">
-                  <Label>Upload Logo</Label>
-                  <Avatar className="h-28 w-28 border border-black rounded-full">
-                    <AvatarFallback className="w-full h-full">
-                      <Controller
-                        name="avatarUrl"
-                        control={control}
-                        render={({ field, fieldState }) => (
-                          <div className="space-y-2">
-                            <ImageUpload
-                              value={field.value}
-                              url={avatarUrl}
-                              onChange={field.onChange}
-                              boxText={
-                                "A photo larger than 400 pixels works best. Max photo size 5 MB."
-                              }
-                              className={cn(
-                                fieldState.error &&
-                                  "ring-1 ring-destructive/50 rounded-lg",
-                                "h-full w-full rounded-full",
-                              )}
-                            />
-                            {fieldState.error && (
-                              <p className="text-sm text-destructive">
-                                {fieldState.error.message}
-                              </p>
-                            )}
-                          </div>
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                <div className="flex flex-col items-center sm:items-start gap-2 shrink-0 self-center sm:self-start">
+                  <Label className="text-sm font-medium">Company Logo</Label>
+                  <Controller
+                    name="avatarUrl"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <div className="flex flex-col items-center">
+                        <ImageUpload
+                          value={field.value}
+                          url={avatarUrl}
+                          onChange={field.onChange}
+                          boxText="Recommended: 400×400px. JPG, PNG or WebP, max 5 MB."
+                          className={cn(
+                            fieldState.error &&
+                              "ring-2 ring-destructive/60",
+                          )}
+                        />
+                        {fieldState.error && (
+                          <p className="text-xs text-destructive text-center max-w-[160px] mt-1.5 font-medium">
+                            {fieldState.error.message}
+                          </p>
                         )}
-                      />
-                    </AvatarFallback>
-                  </Avatar>
+                      </div>
+                    )}
+                  />
                 </div>
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-4 w-full">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="company-name">Company Name</Label>
@@ -446,7 +439,7 @@ export default EmployerForm;
 
 type ImageUploadProps = Omit<ComponentProps<"div">, "onChange"> & {
   value?: string;
-  url: string | null;
+  url?: string | null;
   boxText?: string;
   onChange: (url: string) => void;
 };
@@ -460,7 +453,13 @@ export const ImageUpload = ({
   ...props
 }: ImageUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(url);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(url || null);
+
+  useEffect(() => {
+    if (url) {
+      setPreviewUrl(url);
+    }
+  }, [url]);
 
   const { startUpload } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res) => {
@@ -513,79 +512,112 @@ export const ImageUpload = ({
     setPreviewUrl(null);
   };
 
-  if (value || previewUrl)
-    return (
-      <div
-        className={cn(
-          "overflow-hidden border-2 border-border relative group rounded-lg",
-          className,
-        )}
-        {...props}
-      >
-        <Image
-          src={previewUrl || value || ""}
-          alt="Uploaded image"
-          height={200}
-          width={200}
-          className="w-full h-full object-cover"
-        />
-
-        {isUploading && (
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="w-8 h-8 text-white animate-spin" />
-              <p className="text-sm text-white font-medium">Uploading...</p>
-            </div>
-          </div>
-        )}
-
-        {!isUploading && (
-          <div
-            {...getRootProps()}
-            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <input {...getInputProps()} />
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={handleRemove}
-            >
-              <X className="w-4 h-4 mr-2" />
-              Remove
-            </Button>
-          </div>
-        )}
-      </div>
-    );
+  const currentImage = previewUrl || value;
 
   return (
-    <div
-      {...getRootProps()}
-      className={cn(
-        "border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors",
-        isDragActive
-          ? "border-primary bg-primary/5"
-          : "border-muted-foreground/25 hover:border-primary/50",
-        isUploading && "opacity-50 pointer-events-none",
-        className,
-      )}
-      {...props}
-    >
-      <input {...getInputProps()} />
-      <div className="flex flex-col items-center">
-        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3">
-          <Upload className="w-5 h-5 text-muted-foreground" />
+    <div className="flex flex-col items-center">
+      {currentImage ? (
+        <div
+          className={cn(
+            "group relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-border shadow-xs bg-muted/20 transition-all duration-200 hover:border-primary/40 select-none",
+            className,
+          )}
+          {...props}
+        >
+          <Image
+            src={currentImage}
+            alt="Company Logo"
+            width={128}
+            height={128}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+
+          {isUploading && (
+            <div className="absolute inset-0 bg-background/85 backdrop-blur-xs flex flex-col items-center justify-center gap-1 z-20">
+              <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              <p className="text-[11px] font-medium text-foreground">Uploading...</p>
+            </div>
+          )}
+
+          {!isUploading && (
+            <div
+              {...getRootProps()}
+              className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-1.5 z-10 cursor-pointer p-2"
+            >
+              <input {...getInputProps()} />
+              <div className="flex items-center gap-1 text-[11px] font-medium text-white bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-full backdrop-blur-xs transition-colors shadow-xs">
+                <Camera className="w-3.5 h-3.5" />
+                <span>Change</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemove}
+                title="Remove logo"
+                className="flex items-center gap-1 text-[10px] font-medium text-red-200 hover:text-white bg-destructive/70 hover:bg-destructive px-2 py-0.5 rounded-full transition-colors shadow-xs cursor-pointer"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Remove</span>
+              </button>
+            </div>
+          )}
         </div>
-        <p className="text-sm font-medium text-foreground mb-1">
-          <span className="text-primary">Browse photo</span> or drop here
+      ) : (
+        <div
+          {...getRootProps()}
+          className={cn(
+            "group relative flex flex-col items-center justify-center w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-dashed transition-all duration-200 cursor-pointer overflow-hidden select-none",
+            isDragActive
+              ? "border-primary bg-primary/10 ring-4 ring-primary/20 scale-105"
+              : "border-muted-foreground/30 bg-muted/20 hover:border-primary/60 hover:bg-muted/50 hover:shadow-xs",
+            isUploading && "pointer-events-none opacity-60",
+            className,
+          )}
+          {...props}
+        >
+          <input {...getInputProps()} />
+
+          {isUploading ? (
+            <div className="flex flex-col items-center justify-center text-center p-2">
+              <Loader2 className="w-6 h-6 text-primary animate-spin mb-1.5" />
+              <span className="text-[11px] font-medium text-foreground">Uploading...</span>
+            </div>
+          ) : isDragActive ? (
+            <div className="flex flex-col items-center justify-center text-center p-2">
+              <Upload className="w-6 h-6 text-primary animate-bounce mb-1" />
+              <span className="text-xs font-semibold text-primary">Drop here</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center px-2 py-1">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-background shadow-xs border border-border/70 flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:scale-110 group-hover:border-primary/40 transition-all duration-200 mb-1">
+                <Camera className="w-4 h-4 sm:w-5 sm:h-5 transition-transform" />
+              </div>
+              <span className="text-xs font-medium text-foreground/90 group-hover:text-primary transition-colors">
+                Upload Logo
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                Click or drag
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {currentImage && !isUploading && (
+        <button
+          type="button"
+          onClick={handleRemove}
+          className="mt-2 text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <Trash2 className="w-3 h-3" />
+          <span>Remove logo</span>
+        </button>
+      )}
+
+      {boxText && (
+        <p className="mt-2 text-[11px] text-muted-foreground text-center max-w-[150px] leading-tight">
+          {boxText}
         </p>
-        {boxText && (
-          <p className="text-xs text-muted-foreground text-center px-4 max-w-xs">
-            {boxText}
-          </p>
-        )}
-      </div>
+      )}
     </div>
   );
 };
