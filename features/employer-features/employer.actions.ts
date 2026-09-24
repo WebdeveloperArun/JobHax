@@ -1,9 +1,23 @@
 "use server";
 import { db } from "@/src/config/db";
 import { getCurrentUser } from "../auth/server/auth.queries";
-import { postJobType, PostJobType, updateCompanyProfileData, UpdateCompanyProfileData } from "./employer.schema";
-import { employers, jobs, users, jobApplications, ApplicationStatus } from "@/src/drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import {
+    postJobType,
+    PostJobType,
+    updateCompanyProfileData,
+    UpdateCompanyProfileData,
+    updateEmployerAccountSchema,
+    UpdateEmployerAccountData,
+    changeEmployerPasswordSchema,
+    ChangeEmployerPasswordData,
+    employerNotificationPreferencesSchema,
+    EmployerNotificationPreferencesData,
+    sendEmployerMessageSchema,
+    SendEmployerMessageData,
+} from "./employer.schema";
+import { employers, jobs, users, jobApplications, conversations, messages, ApplicationStatus } from "@/src/drizzle/schema";
+import { eq, and, ne, or, asc } from "drizzle-orm";
+import argon2 from "argon2";
 import { getEmployerJobs, getEmployerCandidatesData } from "./employer.queries";
 
 
@@ -26,6 +40,120 @@ export const updateEmployerProfile = async (data: UpdateCompanyProfileData) => {
         return { status: "ERROR", message: "Failed to update company profile" };
     }
 }
+
+export const updateEmployerAccount = async (data: UpdateEmployerAccountData) => {
+    try {
+        const { data: validatedData, error } = updateEmployerAccountSchema.safeParse(data);
+        if (error) return { status: "ERROR", message: error.issues[0].message };
+
+        const currentUser = await getCurrentUser();
+        if (!currentUser || currentUser.role !== "employer") {
+            return { status: "ERROR", message: "Unauthorized" };
+        }
+
+        const [conflict] = await db
+            .select({ id: users.id, email: users.email, userName: users.userName })
+            .from(users)
+            .where(
+                and(
+                    ne(users.id, currentUser.id),
+                    or(
+                        eq(users.email, validatedData.email),
+                        eq(users.userName, validatedData.userName),
+                    ),
+                ),
+            );
+
+        if (conflict) {
+            if (conflict.email === validatedData.email) {
+                return { status: "ERROR", message: "Email already exists" };
+            }
+            return { status: "ERROR", message: "Username already exists" };
+        }
+
+        await db
+            .update(users)
+            .set({
+                name: validatedData.name,
+                userName: validatedData.userName,
+                email: validatedData.email,
+                phoneNumber: validatedData.phoneNumber || null,
+            })
+            .where(eq(users.id, currentUser.id));
+
+        return { status: "SUCCESS", message: "Account updated successfully" };
+    } catch {
+        return { status: "ERROR", message: "Failed to update account" };
+    }
+};
+
+export const changeEmployerPassword = async (data: ChangeEmployerPasswordData) => {
+    try {
+        const { data: validatedData, error } = changeEmployerPasswordSchema.safeParse(data);
+        if (error) return { status: "ERROR", message: error.issues[0].message };
+
+        const currentUser = await getCurrentUser();
+        if (!currentUser || currentUser.role !== "employer") {
+            return { status: "ERROR", message: "Unauthorized" };
+        }
+
+        const [user] = await db
+            .select({ password: users.password })
+            .from(users)
+            .where(eq(users.id, currentUser.id));
+
+        if (!user) return { status: "ERROR", message: "User not found" };
+
+        const isPasswordValid = await argon2.verify(user.password, validatedData.currentPassword);
+        if (!isPasswordValid) {
+            return { status: "ERROR", message: "Current password is incorrect" };
+        }
+
+        await db
+            .update(users)
+            .set({ password: await argon2.hash(validatedData.newPassword) })
+            .where(eq(users.id, currentUser.id));
+
+        return { status: "SUCCESS", message: "Password updated successfully" };
+    } catch {
+        return { status: "ERROR", message: "Failed to update password" };
+    }
+};
+
+export const updateEmployerNotificationPreferences = async (
+    data: EmployerNotificationPreferencesData,
+) => {
+    try {
+        const { data: validatedData, error } = employerNotificationPreferencesSchema.safeParse(data);
+        if (error) return { status: "ERROR", message: error.issues[0].message };
+
+        const currentUser = await getCurrentUser();
+        if (!currentUser || currentUser.role !== "employer") {
+            return { status: "ERROR", message: "Unauthorized" };
+        }
+
+        const [employer] = await db
+            .select({ metadata: employers.metadata })
+            .from(employers)
+            .where(eq(employers.id, currentUser.id));
+
+        if (!employer) return { status: "ERROR", message: "Employer not found" };
+
+        await db
+            .update(employers)
+            .set({
+                metadata: {
+                    ...employer.metadata,
+                    notifications: validatedData,
+                },
+            })
+            .where(eq(employers.id, currentUser.id));
+
+        return { status: "SUCCESS", message: "Notification preferences saved" };
+    } catch {
+        return { status: "ERROR", message: "Failed to save notification preferences" };
+    }
+};
 
 export const postJob = async (data: PostJobType) => {
     try {
@@ -629,4 +757,60 @@ export const fetchEmployerAnalyticsAction = async () => {
         return { status: "ERROR", message: "Failed to fetch analytics" };
     }
 }
-
+
+export const sendEmployerMessage = async (data: SendEmployerMessageData) => {
+    try {
+        const { data: validatedData, error } = sendEmployerMessageSchema.safeParse(data);
+        if (error) return { status: "ERROR", message: error.issues[0].message };
+
+        const currentUser = await getCurrentUser();
+        if (!currentUser || currentUser.role !== "employer") {
+            return { status: "ERROR", message: "Unauthorized" };
+        }
+
+        // Check if conversation exists, if not create it. But conversationId is required in schema?
+        // Let's assume conversationId is passed, or if not, we handle it. The schema employer.schema.ts has sendEmployerMessageSchema.
+        // I'll need to double check the schema. Wait, if it has conversationId we just insert.
+        // If the schema requires conversationId, we insert message and update conversation lastMessageAt.
+        
+        await db.transaction(async (tx) => {
+            await tx.insert(messages).values({
+                conversationId: validatedData.conversationId,
+                senderRole: "employer",
+                senderId: currentUser.id,
+                body: validatedData.body,
+            });
+
+            await tx.update(conversations)
+                .set({ lastMessageAt: new Date(), employerLastReadAt: new Date() })
+                .where(eq(conversations.id, validatedData.conversationId));
+        });
+
+        // revalidatePath("/employer/messages") could be added, but returning success is enough if frontend does optimistic update or revalidation
+
+        return { status: "SUCCESS", message: "Message sent successfully" };
+    } catch (error) {
+        console.error("sendEmployerMessage error:", error);
+        return { status: "ERROR", message: "Failed to send message" };
+    }
+}
+
+export const getConversationMessagesAction = async (conversationId: number) => {
+    try {
+        const currentUser = await getCurrentUser();
+        if (!currentUser || currentUser.role !== "employer") {
+            return { status: "ERROR", message: "Unauthorized", data: [] };
+        }
+
+        const conversationMessages = await db
+            .select()
+            .from(messages)
+            .where(eq(messages.conversationId, conversationId))
+            .orderBy(asc(messages.createdAt));
+
+        return { status: "SUCCESS", data: conversationMessages };
+    } catch (error) {
+        console.error("getConversationMessagesAction error:", error);
+        return { status: "ERROR", message: "Failed to fetch messages", data: [] };
+    }
+}

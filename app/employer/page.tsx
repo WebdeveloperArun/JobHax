@@ -2,7 +2,7 @@ import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Briefcase,
   Users,
@@ -23,112 +23,52 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item";
-import { getCurrentEmployerDetails } from "@/features/employer-features/employer.queries";
-
-const stats = [
-  {
-    label: "Active Jobs",
-    value: 8,
-    icon: Briefcase,
-    change: "+2 this month",
-  },
-  {
-    label: "Total Applicants",
-    value: 156,
-    icon: Users,
-    change: "+24 this week",
-  },
-  { label: "Job Views", value: 2450, icon: Eye, change: "+340 this week" },
-  {
-    label: "Hired This Month",
-    value: 3,
-    icon: CheckCircle,
-    change: "+1 this week",
-  },
-];
-
-const activeJobs = [
-  {
-    id: 1,
-    title: "Senior Frontend Developer",
-    location: "San Francisco, CA",
-    type: "Full-time",
-    applicants: 45,
-    newApplicants: 8,
-    views: 320,
-    posted: "5 days ago",
-    status: "active",
-  },
-  {
-    id: 2,
-    title: "Product Designer",
-    location: "Remote",
-    type: "Full-time",
-    applicants: 32,
-    newApplicants: 5,
-    views: 245,
-    posted: "1 week ago",
-    status: "active",
-  },
-  {
-    id: 3,
-    title: "DevOps Engineer",
-    location: "New York, NY",
-    type: "Full-time",
-    applicants: 28,
-    newApplicants: 3,
-    views: 180,
-    posted: "2 weeks ago",
-    status: "active",
-  },
-];
-
-const recentApplicants = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    role: "Senior Frontend Developer",
-    avatar: "SJ",
-    experience: "5 years",
-    appliedFor: "Senior Frontend Developer",
-    appliedDate: "2 hours ago",
-    match: 95,
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    role: "Full Stack Developer",
-    avatar: "MC",
-    experience: "4 years",
-    appliedFor: "Senior Frontend Developer",
-    appliedDate: "5 hours ago",
-    match: 88,
-  },
-  {
-    id: 3,
-    name: "Emily Rodriguez",
-    role: "Product Designer",
-    avatar: "ER",
-    experience: "6 years",
-    appliedFor: "Product Designer",
-    appliedDate: "1 day ago",
-    match: 92,
-  },
-  {
-    id: 4,
-    name: "David Kim",
-    role: "DevOps Engineer",
-    avatar: "DK",
-    experience: "3 years",
-    appliedFor: "DevOps Engineer",
-    appliedDate: "1 day ago",
-    match: 85,
-  },
-];
+import { getCurrentEmployerDetails, getEmployerCandidatesData } from "@/features/employer-features/employer.queries";
+import { fetchEmployerAnalyticsAction } from "@/features/employer-features/employer.actions";
+import { formatDistanceToNow } from "date-fns";
 
 export default async function EmployerDashboard() {
   const data = await getCurrentEmployerDetails();
-  console.log("data: ", data);
+  const analyticsRes = await fetchEmployerAnalyticsAction();
+  const candidatesData = await getEmployerCandidatesData();
+
+  const analytics = analyticsRes.status === "SUCCESS" ? analyticsRes.data : null;
+  const recentApplicants = candidatesData?.candidates?.slice(0, 5) || [];
+  
+  // Format stats using real data
+  const stats = [
+    {
+      label: "Active Jobs",
+      value: analytics?.summary?.activeJobs || 0,
+      icon: Briefcase,
+      change: "Current active postings",
+    },
+    {
+      label: "Total Applicants",
+      value: analytics?.summary?.totalApplications || 0,
+      icon: Users,
+      change: `${analytics?.summary?.newApplications || 0} new`,
+    },
+    { 
+      label: "Average Match Score", 
+      value: `${analytics?.summary?.avgMatchScore || 0}%`, 
+      icon: TrendingUp, 
+      change: "Across all applicants" 
+    },
+    {
+      label: "Hired/Offered",
+      value: analytics?.summary?.offeredCount || 0,
+      icon: CheckCircle,
+      change: "Candidates offered",
+    },
+  ];
+
+  const activeJobs = analytics?.jobPerformance?.filter((job: any) => job.status === "published").slice(0, 5) || [];
+
+  const getAvatarFallback = (name: string) => {
+    if (!name) return "U"
+    return name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase()
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -191,7 +131,6 @@ export default async function EmployerDashboard() {
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                       <stat.icon className="h-5 w-5 text-primary" />
                     </div>
-                    <TrendingUp className="h-4 w-4 text-accent" />
                   </div>
                   <div className="mt-4">
                     <p className="text-2xl font-bold text-foreground">
@@ -218,9 +157,12 @@ export default async function EmployerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {activeJobs.map((job) => (
+                  {activeJobs.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No active job postings.</p>
+                  )}
+                  {activeJobs.map((job: any) => (
                     <div
-                      key={job.id}
+                      key={job.jobId}
                       className="flex items-center gap-4 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
@@ -228,12 +170,12 @@ export default async function EmployerDashboard() {
                           <p className="font-medium text-foreground truncate">
                             {job.title}
                           </p>
-                          {job.newApplicants > 0 && (
+                          {job.newApps > 0 && (
                             <Badge
                               variant="secondary"
                               className="bg-accent/10 text-accent"
                             >
-                              +{job.newApplicants} new
+                              +{job.newApps} new
                             </Badge>
                           )}
                         </div>
@@ -242,18 +184,18 @@ export default async function EmployerDashboard() {
                             <MapPin className="h-3 w-3" />
                             {job.location}
                           </span>
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1 capitalize">
                             <Clock className="h-3 w-3" />
-                            {job.posted}
+                            {job.employmentType}
                           </span>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-medium">
-                          {job.applicants} applicants
+                          {job.totalApps} applicants
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {job.views} views
+                          {job.avgMatchScore}% avg match
                         </p>
                       </div>
                     </div>
@@ -272,33 +214,36 @@ export default async function EmployerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentApplicants.map((applicant) => (
+                  {recentApplicants.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No recent applicants.</p>
+                  )}
+                  {recentApplicants.map((applicant: any) => (
                     <div
                       key={applicant.id}
                       className="flex items-center gap-4 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
                     >
                       <Avatar>
                         <AvatarFallback className="bg-primary/10 text-primary">
-                          {applicant.avatar}
+                          {getAvatarFallback(applicant.candidateName)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground truncate">
-                          {applicant.name}
+                          {applicant.candidateName}
                         </p>
                         <p className="text-sm text-muted-foreground truncate">
-                          {applicant.role} • {applicant.experience}
+                          {applicant.candidateTitle || "Candidate"} {applicant.experience ? `• ${applicant.experience}` : ""}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Applied for: {applicant.appliedFor}
+                          Applied for: {applicant.jobTitle}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
                         <div className="text-sm font-medium text-accent">
-                          {applicant.match}% match
+                          {applicant.matchScore || 0}% match
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {applicant.appliedDate}
+                          {formatDistanceToNow(new Date(applicant.appliedAt), { addSuffix: true })}
                         </p>
                       </div>
                     </div>

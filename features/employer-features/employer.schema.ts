@@ -39,6 +39,53 @@ export const updateCompanyProfileData = z.object({
 export type CompanyProfileData = z.infer<typeof companyProfileData>
 export type UpdateCompanyProfileData = z.infer<typeof updateCompanyProfileData>
 
+export const updateEmployerAccountSchema = z.object({
+    name: z.string().trim().min(2, "Name must be at least 2 characters").max(255),
+    userName: z
+        .string()
+        .trim()
+        .min(3, "Username must be at least 3 characters")
+        .max(255)
+        .regex(
+            /^[a-zA-Z0-9_-]+$/,
+            "Username can only contain letters, numbers, underscores, and hyphens",
+        ),
+    email: z.string().trim().email("Enter a valid email").max(255).toLowerCase(),
+    phoneNumber: z.string().trim().max(255).optional().or(z.literal("")),
+})
+
+export type UpdateEmployerAccountData = z.infer<typeof updateEmployerAccountSchema>
+
+export const changeEmployerPasswordSchema = z
+    .object({
+        currentPassword: z.string().min(1, "Current password is required"),
+        newPassword: z
+            .string()
+            .min(8, "Password must be at least 8 characters")
+            .regex(
+                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                "Password must contain at least one lowercase letter, one uppercase letter, and one number",
+            ),
+        confirmPassword: z.string(),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+        message: "Passwords don't match",
+        path: ["confirmPassword"],
+    })
+
+export type ChangeEmployerPasswordData = z.infer<typeof changeEmployerPasswordSchema>
+
+export const employerNotificationPreferencesSchema = z.object({
+    newApplications: z.boolean(),
+    applicationUpdates: z.boolean(),
+    weeklyReports: z.boolean(),
+    productUpdates: z.boolean(),
+})
+
+export type EmployerNotificationPreferencesData = z.infer<
+    typeof employerNotificationPreferencesSchema
+>
+
 export const postJobType = z.object({
     title: z.string().max(255),
     department: z.enum([
@@ -81,3 +128,22 @@ export const postJobType = z.object({
 })
 
 export type PostJobType = z.infer<typeof postJobType>
+
+export const sendEmployerMessageSchema = z.object({
+    conversationId: z.coerce.number().int().positive(),
+    body: z.string().trim().min(1, "Message cannot be empty").max(4000, "Message is too long"),
+})
+
+export type SendEmployerMessageData = z.infer<typeof sendEmployerMessageSchema>
+
+export const startEmployerConversationSchema = z.object({
+    applicationId: z.coerce.number().int().positive(),
+    body: z
+        .string()
+        .trim()
+        .max(4000, "Message is too long")
+        .optional()
+        .or(z.literal("")),
+})
+
+export type StartEmployerConversationData = z.infer<typeof startEmployerConversationSchema>
